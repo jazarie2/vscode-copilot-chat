@@ -73,8 +73,10 @@ Please include the following with each issue:
 ### First-time setup
 - on Windows you need to run `Set-ExecutionPolicy Unrestricted` as admin in Powershell.
 - `npm install`
-- `npm run get_token`
+- `npm run get_token` - This will guide you through GitHub OAuth setup for development
 - Then you can run the build task with `cmd+shift+B`, or just start the "Launch Copilot Extension - Watch Mode" launch config to start the build then start debugging the extension.
+
+**For detailed token setup instructions, see [GITHUB_COPILOT_TOKEN_SETUP.md](./GITHUB_COPILOT_TOKEN_SETUP.md)**
 
 **Tip:** If "Launch Copilot Extension - Watch Mode" doesn't work for you, try using the "Launch Copilot Extension" debug configuration instead.
 

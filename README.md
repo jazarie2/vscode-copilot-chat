@@ -66,6 +66,7 @@ To get the latest security fixes, please use the latest version of the Copilot e
 * **[Copilot Chat quickstart video](https://www.youtube.com/watch?v=3surPGP7_4o)** to learn Copilot Chat in less than 4 minutes
 * **[VS Code Copilot Series on YouTube](https://www.youtube.com/playlist?list=PLj6YeMhvp2S5_hvBl2SE-7YCHYlLQ0bPt)**
 * **[FAQ](https://code.visualstudio.com/docs/copilot/faq)**
+* **[Token Setup Guide](./GITHUB_COPILOT_TOKEN_SETUP.md)**: Comprehensive guide for setting up authentication tokens
 * **[Feedback](https://github.com/microsoft/vscode-copilot-release/issues)**: We'd love to get your help in making GitHub Copilot better!
 
 ## Data and telemetry
