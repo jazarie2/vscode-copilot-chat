@@ -1,0 +1,11 @@
+# CLI Pilot Requirements
+# Basic dependencies for running CLI Pilot without VSCode
+
+# No external dependencies required for basic functionality
+# CLI Pilot is designed to work with Python standard library only
+
+# Optional dependencies for enhanced functionality:
+# requests>=2.25.1  # For HTTP requests (if connecting to real APIs)
+# rich>=10.0.0      # For enhanced terminal output and formatting
+# click>=7.0        # Alternative to argparse for CLI interface
+# pyyaml>=5.4.1     # For YAML configuration support
