@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 from typing import Optional, Dict, Any
+import time
 
 
 class CLIConfig:
@@ -134,13 +135,33 @@ class CLIConfig:
         # Try configuration file
         return self.get('auth.token')
     
-    def set_token(self, token: str):
+    def set_token(self, token: Optional[str]):
         """Set authentication token.
         
         Args:
-            token: Authentication token
+            token: Authentication token (or None to remove)
         """
-        self.set('auth.token', token)
+        if token is None:
+            # Remove token
+            self.set('auth.token', None)
+        else:
+            self.set('auth.token', token)
+            # Also set the token type to indicate it's a GitHub token
+            self.set('auth.token_type', 'github')
+            self.set('auth.authenticated_at', time.time())
+    
+    def get_auth_info(self) -> Dict[str, Any]:
+        """Get authentication information.
+        
+        Returns:
+            Authentication info dictionary
+        """
+        return {
+            'token': self.get_token(),
+            'token_type': self.get('auth.token_type', 'github'),
+            'authenticated_at': self.get('auth.authenticated_at'),
+            'is_authenticated': self.is_configured()
+        }
     
     def get_chat_config(self) -> Dict[str, Any]:
         """Get chat configuration.

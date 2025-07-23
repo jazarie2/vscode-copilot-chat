@@ -22,10 +22,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  python main.py auth login                           # Login with GitHub OAuth
+  python main.py auth status                          # Check authentication status
   python main.py chat "How do I create a Python function?"
   python main.py chat "Explain this code" --file main.py
   python main.py chat "Fix this bug" --file src/app.py --context
   python main.py interactive
+  python main.py setup --token <your-token>          # Manual token setup
   python main.py --help
         """
     )
@@ -36,6 +39,20 @@ Examples:
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
     
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    
+    # Authentication command
+    auth_parser = subparsers.add_parser("auth", help="GitHub authentication management")
+    auth_subparsers = auth_parser.add_subparsers(dest="auth_command", help="Authentication commands")
+    
+    # Auth login command
+    login_parser = auth_subparsers.add_parser("login", help="Login with GitHub OAuth")
+    login_parser.add_argument("--client-id", help="Custom GitHub OAuth client ID")
+    
+    # Auth status command
+    status_parser = auth_subparsers.add_parser("status", help="Check authentication status")
+    
+    # Auth logout command
+    logout_parser = auth_subparsers.add_parser("logout", help="Remove stored authentication")
     
     # Chat command
     chat_parser = subparsers.add_parser("chat", help="Send a chat message to Copilot")
@@ -48,8 +65,8 @@ Examples:
     interactive_parser = subparsers.add_parser("interactive", help="Start interactive chat session")
     interactive_parser.add_argument("--agent", help="Specific agent to use")
     
-    # Setup command
-    setup_parser = subparsers.add_parser("setup", help="Setup CLI Pilot configuration")
+    # Setup command (for manual token setup)
+    setup_parser = subparsers.add_parser("setup", help="Setup CLI Pilot configuration manually")
     setup_parser.add_argument("--token", help="GitHub Copilot token")
     
     args = parser.parse_args()
@@ -65,7 +82,19 @@ Examples:
             config_path=args.config
         )
         
-        if args.command == "chat":
+        if args.command == "auth":
+            if not args.auth_command:
+                auth_parser.print_help()
+                return 1
+            
+            if args.auth_command == "login":
+                return clipilot.handle_auth_login(client_id=getattr(args, 'client_id', None))
+            elif args.auth_command == "status":
+                return clipilot.handle_auth_status()
+            elif args.auth_command == "logout":
+                return clipilot.handle_auth_logout()
+        
+        elif args.command == "chat":
             return clipilot.handle_chat(
                 message=args.message,
                 files=args.file or [],
