@@ -137,21 +137,30 @@ class ChatInterface:
         workspace_info = context.get("workspace_info", {})
         model = request.get("model", "gpt-4o-mini")
         model_info = request.get("model_info", {})
+        agent = request.get("agent", "workspace")
         
-        # Simulate model-specific behavior
+        # Simulate model-specific behavior with agent context
         if "claude" in model:
-            return self._generate_claude_style_response(message, context, model_info)
+            return self._generate_claude_style_response(message, context, model_info, agent)
         elif "gemini" in model:
-            return self._generate_gemini_style_response(message, context, model_info)
+            return self._generate_gemini_style_response(message, context, model_info, agent)
         elif "o1" in model:
-            return self._generate_o1_style_response(message, context, model_info)
+            return self._generate_o1_style_response(message, context, model_info, agent)
         else:
-            return self._generate_gpt_style_response(message, context, model_info)
+            return self._generate_gpt_style_response(message, context, model_info, agent)
     
-    def _generate_claude_style_response(self, message: str, context: Dict[str, Any], model_info: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_claude_style_response(self, message: str, context: Dict[str, Any], model_info: Dict[str, Any], agent: str = "workspace") -> Dict[str, Any]:
         """Generate a Claude-style response."""
         model_name = model_info.get("name", "Claude")
-        content = f"""Hello! I'm {model_name}, and I'm here to help you with your coding tasks.
+        
+        # Special handling for terminal agent
+        if agent == "terminal":
+            return self._generate_terminal_specific_response(message, context, model_info, model_name)
+        
+        # Agent-specific introduction
+        agent_intro = self._get_agent_introduction(agent)
+        
+        content = f"""Hello! I'm {model_name}, working as your {agent_intro}.
 
 **Your message:** {message}
 
@@ -160,6 +169,9 @@ I notice you're using Claude, which excels at:
 • Structured problem-solving approaches
 • Clear explanations with step-by-step reasoning
 • Following coding best practices
+
+**As your {agent} agent, I specialize in:**
+{self._get_agent_capabilities_text(agent)}
 
 **Claude's capabilities:**
 ✓ Advanced code understanding and generation
@@ -171,10 +183,183 @@ How can I assist you with your code today? I can help explain complex logic, sug
 
         return {"content": content, "references": []}
     
-    def _generate_gemini_style_response(self, message: str, context: Dict[str, Any], model_info: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_agent_introduction(self, agent: str) -> str:
+        """Get agent-specific introduction text."""
+        agent_intros = {
+            "workspace": "Workspace Agent, specializing in project-wide analysis",
+            "vscode": "VS Code Agent, expert in editor features and extensions",
+            "terminal": "Terminal Agent, focused on command-line operations",
+            "agent": "Autonomous Agent, capable of multi-step task execution"
+        }
+        return agent_intros.get(agent, "AI Assistant")
+    
+    def _get_agent_capabilities_text(self, agent: str) -> str:
+        """Get formatted agent capabilities text."""
+        agent_caps = {
+            "workspace": """• Project structure analysis
+• Cross-file code understanding
+• Workspace configuration management
+• Dependency analysis""",
+            "vscode": """• Editor features and shortcuts
+• Extension recommendations
+• Debugging assistance
+• Settings and configuration""",
+            "terminal": """• Shell command generation
+• Script automation
+• Process management
+• Command-line tool integration""",
+            "agent": """• Autonomous task planning
+• Multi-step execution
+• Tool calling and integration
+• MCP server utilization"""
+        }
+        return agent_caps.get(agent, "• General coding assistance")
+    
+    def _generate_terminal_specific_response(self, message: str, context: Dict[str, Any], model_info: Dict[str, Any], model_name: str) -> Dict[str, Any]:
+        """Generate terminal agent specific responses with actual command execution."""
+        import os
+        import platform
+        
+        message_lower = message.lower()
+        
+        # Detect list files/directory contents requests FIRST (more specific)
+        if any(phrase in message_lower for phrase in [
+            "list files", "show files", "directory contents", "what files", 
+            "ls", "dir", "file list", "show directory", "list directory",
+            "contents", "files in", "show me files", "list the files"
+        ]):
+            try:
+                current_dir = os.getcwd()
+                files_and_dirs = []
+                
+                for item in sorted(os.listdir(current_dir)):
+                    item_path = os.path.join(current_dir, item)
+                    if os.path.isdir(item_path):
+                        files_and_dirs.append(f"📁 {item}/")
+                    else:
+                        files_and_dirs.append(f"📄 {item}")
+                
+                files_list = "\n".join(files_and_dirs[:20])  # Limit to first 20 items
+                
+                content = f"""🖥️ **{model_name} - Terminal Agent**
+
+**Your request:** {message}
+
+**Directory Contents:** `{current_dir}`
+
+```
+{files_list}
+{f"... and {len(files_and_dirs) - 20} more items" if len(files_and_dirs) > 20 else ""}
+```
+
+**Total items:** {len(files_and_dirs)} ({sum(1 for item in os.listdir(current_dir) if os.path.isdir(os.path.join(current_dir, item)))} folders, {sum(1 for item in os.listdir(current_dir) if os.path.isfile(os.path.join(current_dir, item)))} files)
+
+**Commands to explore further:**
+• `Get-ChildItem -Recurse` (PowerShell) - List all files recursively
+• `Get-ChildItem | Where-Object {{$_.PSIsContainer}}` - Show only folders
+• `Get-ChildItem | Where-Object {{!$_.PSIsContainer}}` - Show only files"""
+                
+                return {"content": content, "references": []}
+                
+            except Exception as e:
+                content = f"""🖥️ **{model_name} - Terminal Agent**
+
+**Your request:** {message}
+
+❌ **Error accessing directory:** {str(e)}
+
+**Alternative commands to try:**
+• `Get-ChildItem` (PowerShell)
+• `dir` (Command Prompt)  
+• `ls` (if using WSL or Git Bash)"""
+                
+                return {"content": content, "references": []}
+        
+        # Detect directory-related requests (less specific, check after file listing)
+        elif any(phrase in message_lower for phrase in [
+            "current working directory", "current directory", "where am i", 
+            "pwd", "current folder", "working directory", "current path"
+        ]):
+            current_dir = os.getcwd()
+            content = f"""🖥️ **{model_name} - Terminal Agent**
+
+**Your request:** {message}
+
+I'll help you find the current working directory!
+
+**Current Working Directory:**
+```
+{current_dir}
+```
+
+**Platform:** {platform.system()}
+
+**Useful directory commands:**
+• **Windows PowerShell:**
+  - `Get-Location` or `pwd` - Show current directory
+  - `Set-Location <path>` or `cd <path>` - Change directory
+  - `Get-ChildItem` or `ls` - List directory contents
+
+• **Windows Command Prompt:**
+  - `cd` - Show current directory
+  - `cd <path>` - Change directory
+  - `dir` - List directory contents
+
+• **Unix/Linux/macOS:**
+  - `pwd` - Show current directory
+  - `cd <path>` - Change directory
+  - `ls` - List directory contents
+
+Would you like me to help with any other directory operations?"""
+            
+            return {"content": content, "references": []}
+        
+        # Handle other terminal-related requests with command suggestions
+        else:
+            content = f"""🖥️ **{model_name} - Terminal Agent**
+
+**Your request:** {message}
+
+As your terminal specialist, I can help you with:
+
+**📍 Current Location:**
+Working Directory: `{os.getcwd()}`
+Platform: {platform.system()}
+
+**🔧 Common Terminal Operations:**
+• **Directory Navigation:**
+  - `pwd` / `Get-Location` - Show current directory
+  - `cd <path>` / `Set-Location <path>` - Change directory
+  - `ls` / `Get-ChildItem` - List contents
+
+• **File Operations:**
+  - `cat <file>` / `Get-Content <file>` - View file contents
+  - `touch <file>` / `New-Item <file>` - Create new file
+  - `mkdir <dir>` / `New-Item -ItemType Directory <dir>` - Create directory
+
+• **Process Management:**
+  - `ps` / `Get-Process` - List running processes
+  - `kill <pid>` / `Stop-Process -Id <pid>` - Terminate process
+
+• **System Information:**
+  - `whoami` / `$env:USERNAME` - Current user
+  - `date` / `Get-Date` - Current date/time
+
+What specific terminal task would you like help with?"""
+            
+            return {"content": content, "references": []}
+    
+    def _generate_gemini_style_response(self, message: str, context: Dict[str, Any], model_info: Dict[str, Any], agent: str = "workspace") -> Dict[str, Any]:
         """Generate a Gemini-style response."""
         model_name = model_info.get("name", "Gemini")
-        content = f"""Hi there! I'm {model_name}, Google's advanced AI assistant.
+        
+        # Special handling for terminal agent
+        if agent == "terminal":
+            return self._generate_terminal_specific_response(message, context, model_info, model_name)
+        
+        agent_intro = self._get_agent_introduction(agent)
+        
+        content = f"""Hi there! I'm {model_name}, working as your {agent_intro}.
 
 **Your query:** {message}
 
@@ -183,6 +368,9 @@ As Gemini, I bring:
 • Multi-modal understanding capabilities
 • Strong reasoning and problem-solving
 • Integration with Google's latest AI research
+
+**As your {agent} agent, I focus on:**
+{self._get_agent_capabilities_text(agent)}
 
 **Gemini's strengths:**
 🚀 High-speed responses
@@ -193,27 +381,31 @@ As Gemini, I bring:
 Let me know what coding challenge you're working on, and I'll provide detailed, actionable guidance!"""
 
         return {"content": content, "references": []}
-    
-    def _generate_o1_style_response(self, message: str, context: Dict[str, Any], model_info: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _generate_o1_style_response(self, message: str, context: Dict[str, Any], model_info: Dict[str, Any], agent: str = "workspace") -> Dict[str, Any]:
         """Generate an o1-style response (reasoning-focused)."""
         model_name = model_info.get("name", "OpenAI o1")
-        content = f"""I am {model_name}, OpenAI's reasoning model. Let me think through your request carefully.
+        
+        # Special handling for terminal agent
+        if agent == "terminal":
+            return self._generate_terminal_specific_response(message, context, model_info, model_name)
+        
+        agent_intro = self._get_agent_introduction(agent)
+        
+        content = f"""I am {model_name}, working as your {agent_intro}. Let me think through your request carefully.
 
 **Your request:** {message}
 
 <thinking>
 I need to analyze this request step by step:
-1. Understanding the user's intent
-2. Considering the context and constraints  
-3. Formulating a comprehensive response
-4. Ensuring accuracy and completeness
+1. Understanding the user's intent from a {agent} perspective
+2. Considering the context and constraints specific to {agent} tasks
+3. Formulating a comprehensive response that leverages my {agent} capabilities
+4. Ensuring accuracy and completeness in my specialized domain
 </thinking>
 
-**My analysis:**
-• I specialize in complex reasoning and problem-solving
-• I take time to think through problems systematically
-• I excel at mathematical and logical challenges
-• I provide detailed, well-reasoned explanations
+**My analysis as {agent} agent:**
+{self._get_agent_capabilities_text(agent)}
 
 **O1 Model Characteristics:**
 🧠 Advanced reasoning capabilities
@@ -225,11 +417,15 @@ For your coding needs, I can provide in-depth analysis, algorithm design, debugg
 
         return {"content": content, "references": []}
     
-    def _generate_gpt_style_response(self, message: str, context: Dict[str, Any], model_info: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_gpt_style_response(self, message: str, context: Dict[str, Any], model_info: Dict[str, Any], agent: str = "workspace") -> Dict[str, Any]:
         """Generate a GPT-style response."""
         model_name = model_info.get("name", "GPT-4")
         files = context.get("files", [])
         workspace_info = context.get("workspace_info", {})
+        
+        # Special handling for terminal agent
+        if agent == "terminal":
+            return self._generate_terminal_specific_response(message, context, model_info, model_name)
         
         # Use existing response logic but with model awareness
         if any(word in message for word in ["explain", "what does", "how does"]):

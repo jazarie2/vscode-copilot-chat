@@ -100,6 +100,32 @@ class CLIConfig:
                 "max_context_size": 4096,
                 "temperature": 0.1,
                 "default_model": "gpt-4o-mini",
+                "available_agents": {
+                    "workspace": {
+                        "name": "Workspace Agent",
+                        "description": "Specializes in workspace-wide operations, file analysis, and project understanding",
+                        "icon": "code",
+                        "capabilities": ["file_analysis", "workspace_context", "project_structure", "code_navigation"]
+                    },
+                    "vscode": {
+                        "name": "VS Code Agent", 
+                        "description": "Helps with VS Code features, extensions, settings, and editor functionality",
+                        "icon": "vscode",
+                        "capabilities": ["editor_features", "extension_help", "settings_config", "debugging"]
+                    },
+                    "terminal": {
+                        "name": "Terminal Agent",
+                        "description": "Assists with command-line operations, shell commands, and terminal workflows",
+                        "icon": "terminal", 
+                        "capabilities": ["shell_commands", "command_line", "scripting", "process_management"]
+                    },
+                    "agent": {
+                        "name": "Agent Mode",
+                        "description": "Autonomous multi-step task execution with tool calling capabilities",
+                        "icon": "copilot",
+                        "capabilities": ["autonomous_tasks", "tool_calling", "multi_step_planning", "mcp_integration"]
+                    }
+                },
                 "available_models": {
                     "gpt-4.1-2025-04-14": {
                         "name": "GPT-4.1",
@@ -156,6 +182,44 @@ class CLIConfig:
                         "max_tokens": 65536,
                         "supports_tools": False,
                         "supports_vision": False
+                    }
+                }
+            },
+            "mcp": {
+                "enabled": True,
+                "servers": {
+                    "filesystem": {
+                        "name": "Filesystem MCP Server",
+                        "description": "Provides file system operations",
+                        "command": "npx",
+                        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/"],
+                        "type": "stdio",
+                        "enabled": True,
+                        "capabilities": ["file_read", "file_write", "directory_list"]
+                    },
+                    "brave-search": {
+                        "name": "Brave Search MCP Server", 
+                        "description": "Web search capabilities via Brave Search",
+                        "command": "npx",
+                        "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+                        "type": "stdio",
+                        "enabled": False,
+                        "env": {
+                            "BRAVE_API_KEY": "${env:BRAVE_API_KEY}"
+                        },
+                        "capabilities": ["web_search", "search_results"]
+                    },
+                    "github": {
+                        "name": "GitHub MCP Server",
+                        "description": "GitHub repository operations",
+                        "command": "npx", 
+                        "args": ["-y", "@modelcontextprotocol/server-github"],
+                        "type": "stdio",
+                        "enabled": False,
+                        "env": {
+                            "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_TOKEN}"
+                        },
+                        "capabilities": ["repo_access", "issue_management", "pr_operations"]
                     }
                 }
             },
@@ -371,3 +435,148 @@ class CLIConfig:
             model_list.append(model_data)
         
         return model_list
+    
+    def get_available_agents(self) -> Dict[str, Any]:
+        """Get available agents configuration.
+        
+        Returns:
+            Dictionary of available agents
+        """
+        return self.get('chat.available_agents', {})
+    
+    def get_agent_info(self, agent_id: str) -> Optional[Dict[str, Any]]:
+        """Get information about a specific agent.
+        
+        Args:
+            agent_id: Agent identifier
+            
+        Returns:
+            Agent information or None if not found
+        """
+        agents = self.get_available_agents()
+        return agents.get(agent_id)
+    
+    def set_default_agent(self, agent_id: str):
+        """Set the default agent.
+        
+        Args:
+            agent_id: Agent identifier
+        """
+        agents = self.get_available_agents()
+        if agent_id not in agents:
+            raise ValueError(f"Unknown agent: {agent_id}. Available agents: {list(agents.keys())}")
+        
+        self.set('chat.default_agent', agent_id)
+    
+    def get_default_agent(self) -> str:
+        """Get the default agent.
+        
+        Returns:
+            Default agent identifier
+        """
+        return self.get('chat.default_agent', 'workspace')
+    
+    def list_agents(self) -> List[Dict[str, Any]]:
+        """List all available agents with their information.
+        
+        Returns:
+            List of agent information dictionaries
+        """
+        agents = self.get_available_agents()
+        agent_list = []
+        
+        for agent_id, agent_info in agents.items():
+            agent_data = {
+                'id': agent_id,
+                'name': agent_info.get('name', agent_id),
+                'description': agent_info.get('description', 'No description available'),
+                'icon': agent_info.get('icon', 'copilot'),
+                'capabilities': agent_info.get('capabilities', []),
+                'is_default': agent_id == self.get_default_agent()
+            }
+            agent_list.append(agent_data)
+        
+        return agent_list
+    
+    def get_mcp_config(self) -> Dict[str, Any]:
+        """Get MCP configuration.
+        
+        Returns:
+            MCP configuration dictionary
+        """
+        return self.get('mcp', {})
+    
+    def is_mcp_enabled(self) -> bool:
+        """Check if MCP is enabled.
+        
+        Returns:
+            True if MCP is enabled, False otherwise
+        """
+        return self.get('mcp.enabled', False)
+    
+    def get_mcp_servers(self) -> Dict[str, Any]:
+        """Get configured MCP servers.
+        
+        Returns:
+            Dictionary of MCP servers
+        """
+        return self.get('mcp.servers', {})
+    
+    def get_enabled_mcp_servers(self) -> Dict[str, Any]:
+        """Get only enabled MCP servers.
+        
+        Returns:
+            Dictionary of enabled MCP servers
+        """
+        servers = self.get_mcp_servers()
+        return {server_id: server_info for server_id, server_info in servers.items() 
+                if server_info.get('enabled', False)}
+    
+    def list_mcp_servers(self) -> List[Dict[str, Any]]:
+        """List all MCP servers with their information.
+        
+        Returns:
+            List of MCP server information dictionaries
+        """
+        servers = self.get_mcp_servers()
+        server_list = []
+        
+        for server_id, server_info in servers.items():
+            server_data = {
+                'id': server_id,
+                'name': server_info.get('name', server_id),
+                'description': server_info.get('description', 'No description available'),
+                'command': server_info.get('command', ''),
+                'args': server_info.get('args', []),
+                'type': server_info.get('type', 'stdio'),
+                'enabled': server_info.get('enabled', False),
+                'capabilities': server_info.get('capabilities', []),
+                'env': server_info.get('env', {})
+            }
+            server_list.append(server_data)
+        
+        return server_list
+    
+    def enable_mcp_server(self, server_id: str):
+        """Enable an MCP server.
+        
+        Args:
+            server_id: MCP server identifier
+        """
+        servers = self.get_mcp_servers()
+        if server_id not in servers:
+            raise ValueError(f"Unknown MCP server: {server_id}. Available servers: {list(servers.keys())}")
+        
+        self.set(f'mcp.servers.{server_id}.enabled', True)
+    
+    def disable_mcp_server(self, server_id: str):
+        """Disable an MCP server.
+        
+        Args:
+            server_id: MCP server identifier
+        """
+        servers = self.get_mcp_servers()
+        if server_id not in servers:
+            raise ValueError(f"Unknown MCP server: {server_id}. Available servers: {list(servers.keys())}")
+        
+        self.set(f'mcp.servers.{server_id}.enabled', False)

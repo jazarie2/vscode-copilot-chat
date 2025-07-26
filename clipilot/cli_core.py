@@ -344,6 +344,154 @@ class CLIPilot:
                 traceback.print_exc()
             return 1
     
+    def list_agents(self) -> int:
+        """List available agents.
+        
+        Returns:
+            Exit code (0 for success, non-zero for error)
+        """
+        try:
+            agents = self.config.list_agents()
+            
+            print("\nAvailable Agents:")
+            print("=" * 80)
+            
+            for agent in agents:
+                status = " (default)" if agent['is_default'] else ""
+                print(f"\n{agent['name']}{status}")
+                print(f"  ID: {agent['id']}")
+                print(f"  Description: {agent['description']}")
+                print(f"  Icon: {agent['icon']}")
+                print(f"  Capabilities: {', '.join(agent['capabilities'])}")
+            
+            print("\n" + "=" * 80)
+            print(f"Current default agent: {self.config.get_default_agent()}")
+            print("\nTo change the default agent, use:")
+            print("  python main.py set-agent <agent-id>")
+            print("\nTo use a specific agent for a chat, use:")
+            print("  python main.py chat \"your message\" --agent <agent-id>")
+            
+            return 0
+            
+        except Exception as e:
+            print(f"Error listing agents: {e}")
+            if self.verbose:
+                import traceback
+                traceback.print_exc()
+            return 1
+    
+    def set_agent(self, agent_id: str) -> int:
+        """Set the default agent.
+        
+        Args:
+            agent_id: Agent identifier to set as default
+            
+        Returns:
+            Exit code (0 for success, non-zero for error)
+        """
+        try:
+            # Validate agent exists
+            agent_info = self.config.get_agent_info(agent_id)
+            if not agent_info:
+                available = list(self.config.get_available_agents().keys())
+                print(f"Error: Unknown agent '{agent_id}'")
+                print(f"Available agents: {', '.join(available)}")
+                print("Use 'python main.py list-agents' to see detailed information")
+                return 1
+            
+            # Set as default
+            self.config.set_default_agent(agent_id)
+            print(f"✓ Default agent set to: {agent_info.get('name', agent_id)} ({agent_id})")
+            
+            return 0
+            
+        except Exception as e:
+            print(f"Error setting agent: {e}")
+            if self.verbose:
+                import traceback
+                traceback.print_exc()
+            return 1
+    
+    def list_mcp_servers(self) -> int:
+        """List MCP servers.
+        
+        Returns:
+            Exit code (0 for success, non-zero for error)
+        """
+        try:
+            if not self.config.is_mcp_enabled():
+                print("MCP (Model Context Protocol) is disabled.")
+                print("To enable MCP, set 'mcp.enabled' to true in your configuration.")
+                return 1
+            
+            servers = self.config.list_mcp_servers()
+            
+            print("\nMCP Servers:")
+            print("=" * 80)
+            
+            enabled_count = 0
+            for server in servers:
+                status = "✓ enabled" if server['enabled'] else "✗ disabled"
+                if server['enabled']:
+                    enabled_count += 1
+                    
+                print(f"\n{server['name']} ({status})")
+                print(f"  ID: {server['id']}")
+                print(f"  Description: {server['description']}")
+                print(f"  Command: {server['command']} {' '.join(server['args'])}")
+                print(f"  Type: {server['type']}")
+                print(f"  Capabilities: {', '.join(server['capabilities'])}")
+                if server['env']:
+                    print(f"  Environment: {', '.join(server['env'].keys())}")
+            
+            print("\n" + "=" * 80)
+            print(f"MCP Status: {'enabled' if self.config.is_mcp_enabled() else 'disabled'}")
+            print(f"Enabled servers: {enabled_count}/{len(servers)}")
+            print("\nTo enable/disable MCP servers, use:")
+            print("  python main.py mcp enable <server-id>")
+            print("  python main.py mcp disable <server-id>")
+            
+            return 0
+            
+        except Exception as e:
+            print(f"Error listing MCP servers: {e}")
+            if self.verbose:
+                import traceback
+                traceback.print_exc()
+            return 1
+    
+    def manage_mcp_server(self, action: str, server_id: str) -> int:
+        """Enable or disable an MCP server.
+        
+        Args:
+            action: "enable" or "disable"
+            server_id: MCP server identifier
+            
+        Returns:
+            Exit code (0 for success, non-zero for error)
+        """
+        try:
+            if action == "enable":
+                self.config.enable_mcp_server(server_id)
+                server_info = self.config.get_mcp_servers().get(server_id, {})
+                print(f"✓ Enabled MCP server: {server_info.get('name', server_id)} ({server_id})")
+            elif action == "disable":
+                self.config.disable_mcp_server(server_id)
+                server_info = self.config.get_mcp_servers().get(server_id, {})
+                print(f"✓ Disabled MCP server: {server_info.get('name', server_id)} ({server_id})")
+            else:
+                print(f"Error: Unknown action '{action}'. Use 'enable' or 'disable'")
+                return 1
+            
+            return 0
+            
+        except Exception as e:
+            print(f"Error managing MCP server: {e}")
+            if self.verbose:
+                import traceback
+                traceback.print_exc()
+            return 1
+    
     def _check_authentication(self) -> bool:
         """Check if user is authenticated.
         

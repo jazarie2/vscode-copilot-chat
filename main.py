@@ -27,11 +27,16 @@ Examples:
   python main.py chat "How do I create a Python function?"
   python main.py chat "Explain this code" --file main.py
   python main.py chat "Fix this bug" --file src/app.py --context
-  python main.py chat "Hello" --model claude-3.5-sonnet
-  python main.py interactive --model o1-mini
-  python main.py list-models                             # List available models
-  python main.py set-model claude-3.5-sonnet            # Set default model
-  python main.py setup --token <your-token>             # Manual token setup
+  python main.py chat "Hello" --model claude-3.5-sonnet --agent workspace
+  python main.py interactive --model o1-mini --agent terminal
+  python main.py list-models                          # List available models
+  python main.py set-model claude-3.5-sonnet         # Set default model
+  python main.py list-agents                          # List available agents
+  python main.py set-agent workspace                  # Set default agent
+  python main.py mcp list                             # List MCP servers
+  python main.py mcp enable filesystem               # Enable MCP server
+  python main.py mcp disable github                   # Disable MCP server
+  python main.py setup --token <your-token>          # Manual token setup
   python main.py --help
         """
     )
@@ -76,6 +81,27 @@ Examples:
     set_model_parser = subparsers.add_parser("set-model", help="Set default model")
     set_model_parser.add_argument("model_id", help="Model ID to set as default")
     
+    # Agent management commands
+    list_agents_parser = subparsers.add_parser("list-agents", help="List available agents")
+    
+    set_agent_parser = subparsers.add_parser("set-agent", help="Set default agent")
+    set_agent_parser.add_argument("agent_id", help="Agent ID to set as default")
+    
+    # MCP management commands
+    mcp_parser = subparsers.add_parser("mcp", help="Manage MCP (Model Context Protocol) servers")
+    mcp_subparsers = mcp_parser.add_subparsers(dest="mcp_command", help="MCP commands")
+    
+    # MCP list command
+    mcp_list_parser = mcp_subparsers.add_parser("list", help="List MCP servers")
+    
+    # MCP enable command
+    mcp_enable_parser = mcp_subparsers.add_parser("enable", help="Enable an MCP server")
+    mcp_enable_parser.add_argument("server_id", help="MCP server ID to enable")
+    
+    # MCP disable command  
+    mcp_disable_parser = mcp_subparsers.add_parser("disable", help="Disable an MCP server")
+    mcp_disable_parser.add_argument("server_id", help="MCP server ID to disable")
+    
     # Setup command (for manual token setup)
     setup_parser = subparsers.add_parser("setup", help="Setup CLI Pilot configuration manually")
     setup_parser.add_argument("--token", help="GitHub Copilot token")
@@ -119,6 +145,21 @@ Examples:
             return clipilot.list_models()
         elif args.command == "set-model":
             return clipilot.set_model(args.model_id)
+        elif args.command == "list-agents":
+            return clipilot.list_agents()
+        elif args.command == "set-agent":
+            return clipilot.set_agent(args.agent_id)
+        elif args.command == "mcp":
+            if not args.mcp_command:
+                mcp_parser.print_help()
+                return 1
+            
+            if args.mcp_command == "list":
+                return clipilot.list_mcp_servers()
+            elif args.mcp_command == "enable":
+                return clipilot.manage_mcp_server("enable", args.server_id)
+            elif args.mcp_command == "disable":
+                return clipilot.manage_mcp_server("disable", args.server_id)
         elif args.command == "setup":
             return clipilot.setup(token=args.token)
         else:
