@@ -27,8 +27,11 @@ Examples:
   python main.py chat "How do I create a Python function?"
   python main.py chat "Explain this code" --file main.py
   python main.py chat "Fix this bug" --file src/app.py --context
-  python main.py interactive
-  python main.py setup --token <your-token>          # Manual token setup
+  python main.py chat "Hello" --model claude-3.5-sonnet
+  python main.py interactive --model o1-mini
+  python main.py list-models                             # List available models
+  python main.py set-model claude-3.5-sonnet            # Set default model
+  python main.py setup --token <your-token>             # Manual token setup
   python main.py --help
         """
     )
@@ -60,10 +63,18 @@ Examples:
     chat_parser.add_argument("--file", "-f", help="File to include as context", action="append")
     chat_parser.add_argument("--context", "-c", action="store_true", help="Include workspace context")
     chat_parser.add_argument("--agent", help="Specific agent to use (workspace, vscode, etc.)")
+    chat_parser.add_argument("--model", "-m", help="Specific model to use (e.g., claude-3.5-sonnet, o1-mini)")
     
     # Interactive command
     interactive_parser = subparsers.add_parser("interactive", help="Start interactive chat session")
     interactive_parser.add_argument("--agent", help="Specific agent to use")
+    interactive_parser.add_argument("--model", "-m", help="Specific model to use")
+    
+    # Model management commands
+    list_models_parser = subparsers.add_parser("list-models", help="List available models")
+    
+    set_model_parser = subparsers.add_parser("set-model", help="Set default model")
+    set_model_parser.add_argument("model_id", help="Model ID to set as default")
     
     # Setup command (for manual token setup)
     setup_parser = subparsers.add_parser("setup", help="Setup CLI Pilot configuration manually")
@@ -99,10 +110,15 @@ Examples:
                 message=args.message,
                 files=args.file or [],
                 include_context=args.context,
-                agent=args.agent
+                agent=args.agent,
+                model=args.model
             )
         elif args.command == "interactive":
-            return clipilot.start_interactive(agent=args.agent)
+            return clipilot.start_interactive(agent=args.agent, model=args.model)
+        elif args.command == "list-models":
+            return clipilot.list_models()
+        elif args.command == "set-model":
+            return clipilot.set_model(args.model_id)
         elif args.command == "setup":
             return clipilot.setup(token=args.token)
         else:

@@ -5,7 +5,7 @@ Configuration management for CLI Pilot.
 import json
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import time
 
 
@@ -38,15 +38,46 @@ class CLIConfig:
     
     def _load_config(self):
         """Load configuration from file."""
+        defaults = self._get_default_config()
+        
         if self.config_path.exists():
             try:
                 with open(self.config_path, 'r', encoding='utf-8') as f:
-                    self._config_data = json.load(f)
+                    loaded_config = json.load(f)
+                
+                # Merge with defaults to ensure all keys exist
+                self._config_data = self._merge_config(defaults, loaded_config)
+                
+                # Save the merged config to ensure it has all the latest structure
+                self._save_config()
+                
             except (json.JSONDecodeError, IOError) as e:
                 print(f"Warning: Could not load config from {self.config_path}: {e}")
-                self._config_data = {}
+                print("Using default configuration.")
+                self._config_data = defaults
+                self._save_config()
         else:
-            self._config_data = self._get_default_config()
+            self._config_data = defaults
+    
+    def _merge_config(self, defaults: Dict[str, Any], loaded: Dict[str, Any]) -> Dict[str, Any]:
+        """Merge loaded config with defaults, preserving existing values.
+        
+        Args:
+            defaults: Default configuration
+            loaded: Loaded configuration
+            
+        Returns:
+            Merged configuration
+        """
+        result = defaults.copy()
+        
+        for key, value in loaded.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = self._merge_config(result[key], value)
+            else:
+                result[key] = value
+        
+        return result
     
     def _save_config(self):
         """Save configuration to file."""
@@ -67,7 +98,66 @@ class CLIConfig:
             "chat": {
                 "default_agent": "workspace",
                 "max_context_size": 4096,
-                "temperature": 0.1
+                "temperature": 0.1,
+                "default_model": "gpt-4o-mini",
+                "available_models": {
+                    "gpt-4.1-2025-04-14": {
+                        "name": "GPT-4.1",
+                        "family": "gpt-4.1",
+                        "description": "Latest GPT-4.1 model with enhanced reasoning",
+                        "max_tokens": 4096,
+                        "supports_tools": True,
+                        "supports_vision": True
+                    },
+                    "gpt-4o-mini": {
+                        "name": "GPT-4o Mini",
+                        "family": "gpt-4o-mini",
+                        "description": "Fast and efficient model for most tasks",
+                        "max_tokens": 16384,
+                        "supports_tools": True,
+                        "supports_vision": True
+                    },
+                    "claude-3.5-sonnet": {
+                        "name": "Claude 3.5 Sonnet",
+                        "family": "claude-3.5-sonnet",
+                        "description": "Anthropic's Claude with excellent code understanding",
+                        "max_tokens": 8192,
+                        "supports_tools": True,
+                        "supports_vision": True
+                    },
+                    "claude-3.7-sonnet": {
+                        "name": "Claude 3.7 Sonnet",
+                        "family": "claude-3.7-sonnet",
+                        "description": "Latest Claude model with thinking capabilities",
+                        "max_tokens": 8192,
+                        "supports_tools": True,
+                        "supports_vision": True
+                    },
+                    "gemini-2.0-flash-001": {
+                        "name": "Gemini 2.0 Flash",
+                        "family": "gemini-2.0-flash",
+                        "description": "Google's fast and capable Gemini model",
+                        "max_tokens": 8192,
+                        "supports_tools": True,
+                        "supports_vision": True
+                    },
+                    "o1": {
+                        "name": "OpenAI o1",
+                        "family": "o1",
+                        "description": "Advanced reasoning model for complex problems",
+                        "max_tokens": 32768,
+                        "supports_tools": False,
+                        "supports_vision": False
+                    },
+                    "o1-mini": {
+                        "name": "OpenAI o1-mini",
+                        "family": "o1-mini",
+                        "description": "Smaller reasoning model for faster responses",
+                        "max_tokens": 65536,
+                        "supports_tools": False,
+                        "supports_vision": False
+                    }
+                }
             },
             "workspace": {
                 "include_patterns": ["*.py", "*.js", "*.ts", "*.java", "*.cpp", "*.c", "*.h"],
@@ -217,3 +307,67 @@ class CLIConfig:
         
         self._config_data.update(imported_config)
         self._save_config()
+    
+    def get_available_models(self) -> Dict[str, Any]:
+        """Get available models configuration.
+        
+        Returns:
+            Dictionary of available models
+        """
+        return self.get('chat.available_models', {})
+    
+    def get_model_info(self, model_id: str) -> Optional[Dict[str, Any]]:
+        """Get information about a specific model.
+        
+        Args:
+            model_id: Model identifier
+            
+        Returns:
+            Model information or None if not found
+        """
+        models = self.get_available_models()
+        return models.get(model_id)
+    
+    def set_default_model(self, model_id: str):
+        """Set the default model.
+        
+        Args:
+            model_id: Model identifier
+        """
+        models = self.get_available_models()
+        if model_id not in models:
+            raise ValueError(f"Unknown model: {model_id}. Available models: {list(models.keys())}")
+        
+        self.set('chat.default_model', model_id)
+    
+    def get_default_model(self) -> str:
+        """Get the default model.
+        
+        Returns:
+            Default model identifier
+        """
+        return self.get('chat.default_model', 'gpt-4o-mini')
+    
+    def list_models(self) -> List[Dict[str, Any]]:
+        """List all available models with their information.
+        
+        Returns:
+            List of model information dictionaries
+        """
+        models = self.get_available_models()
+        model_list = []
+        
+        for model_id, model_info in models.items():
+            model_data = {
+                'id': model_id,
+                'name': model_info.get('name', model_id),
+                'family': model_info.get('family', 'unknown'),
+                'description': model_info.get('description', 'No description available'),
+                'max_tokens': model_info.get('max_tokens', 4096),
+                'supports_tools': model_info.get('supports_tools', False),
+                'supports_vision': model_info.get('supports_vision', False),
+                'is_default': model_id == self.get_default_model()
+            }
+            model_list.append(model_data)
+        
+        return model_list

@@ -13,18 +13,20 @@ class InteractiveSession:
     """Interactive chat session for CLI Pilot."""
     
     def __init__(self, chat_interface: ChatInterface, context_manager: WorkspaceContextManager,
-                 agent: Optional[str] = None, verbose: bool = False):
+                 agent: Optional[str] = None, model: Optional[str] = None, verbose: bool = False):
         """Initialize interactive session.
         
         Args:
             chat_interface: Chat interface instance
             context_manager: Workspace context manager
             agent: Specific agent to use
+            model: Specific model to use
             verbose: Enable verbose logging
         """
         self.chat_interface = chat_interface
         self.context_manager = context_manager
         self.agent = agent
+        self.model = model
         self.verbose = verbose
         self.session_active = True
         
@@ -168,7 +170,8 @@ class InteractiveSession:
         response = self.chat_interface.send_message(
             message=message,
             context=context,
-            agent=self.agent
+            agent=self.agent,
+            model=self.model
         )
         
         # Display response
