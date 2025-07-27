@@ -5,8 +5,8 @@ Run GitHub Copilot Chat functionality without VSCode.
 """
 
 import argparse
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add clipilot to Python path
@@ -38,106 +38,138 @@ Examples:
   python main.py mcp disable github                   # Disable MCP server
   python main.py setup --token <your-token>          # Manual token setup
   python main.py --help
-        """
+        """,
     )
-    
+
     parser.add_argument("--version", action="version", version="CLI Pilot 1.0.0")
     parser.add_argument("--config", help="Path to configuration file")
-    parser.add_argument("--workspace", help="Workspace directory (default: current directory)", default=".")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
-    
+    parser.add_argument(
+        "--workspace",
+        help="Workspace directory (default: current directory)",
+        default=".",
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Enable verbose output"
+    )
+
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
-    
+
     # Authentication command
     auth_parser = subparsers.add_parser("auth", help="GitHub authentication management")
-    auth_subparsers = auth_parser.add_subparsers(dest="auth_command", help="Authentication commands")
-    
+    auth_subparsers = auth_parser.add_subparsers(
+        dest="auth_command", help="Authentication commands"
+    )
+
     # Auth login command
     login_parser = auth_subparsers.add_parser("login", help="Login with GitHub OAuth")
     login_parser.add_argument("--client-id", help="Custom GitHub OAuth client ID")
-    
+
     # Auth status command
-    status_parser = auth_subparsers.add_parser("status", help="Check authentication status")
-    
+    status_parser = auth_subparsers.add_parser(
+        "status", help="Check authentication status"
+    )
+
     # Auth logout command
-    logout_parser = auth_subparsers.add_parser("logout", help="Remove stored authentication")
-    
+    logout_parser = auth_subparsers.add_parser(
+        "logout", help="Remove stored authentication"
+    )
+
     # Chat command
     chat_parser = subparsers.add_parser("chat", help="Send a chat message to Copilot")
     chat_parser.add_argument("message", help="The message to send to Copilot")
-    chat_parser.add_argument("--file", "-f", help="File to include as context", action="append")
-    chat_parser.add_argument("--context", "-c", action="store_true", help="Include workspace context")
-    chat_parser.add_argument("--agent", help="Specific agent to use (workspace, vscode, etc.)")
-    chat_parser.add_argument("--model", "-m", help="Specific model to use (e.g., claude-3.5-sonnet, o1-mini)")
-    
+    chat_parser.add_argument(
+        "--file", "-f", help="File to include as context", action="append"
+    )
+    chat_parser.add_argument(
+        "--context", "-c", action="store_true", help="Include workspace context"
+    )
+    chat_parser.add_argument(
+        "--agent", help="Specific agent to use (workspace, vscode, etc.)"
+    )
+    chat_parser.add_argument(
+        "--model", "-m", help="Specific model to use (e.g., claude-3.5-sonnet, o1-mini)"
+    )
+
     # Interactive command
-    interactive_parser = subparsers.add_parser("interactive", help="Start interactive chat session")
+    interactive_parser = subparsers.add_parser(
+        "interactive", help="Start interactive chat session"
+    )
     interactive_parser.add_argument("--agent", help="Specific agent to use")
     interactive_parser.add_argument("--model", "-m", help="Specific model to use")
-    
+
     # Model management commands
-    list_models_parser = subparsers.add_parser("list-models", help="List available models")
-    
+    list_models_parser = subparsers.add_parser(
+        "list-models", help="List available models"
+    )
+
     set_model_parser = subparsers.add_parser("set-model", help="Set default model")
     set_model_parser.add_argument("model_id", help="Model ID to set as default")
-    
+
     # Agent management commands
-    list_agents_parser = subparsers.add_parser("list-agents", help="List available agents")
-    
+    list_agents_parser = subparsers.add_parser(
+        "list-agents", help="List available agents"
+    )
+
     set_agent_parser = subparsers.add_parser("set-agent", help="Set default agent")
     set_agent_parser.add_argument("agent_id", help="Agent ID to set as default")
-    
+
     # MCP management commands
-    mcp_parser = subparsers.add_parser("mcp", help="Manage MCP (Model Context Protocol) servers")
+    mcp_parser = subparsers.add_parser(
+        "mcp", help="Manage MCP (Model Context Protocol) servers"
+    )
     mcp_subparsers = mcp_parser.add_subparsers(dest="mcp_command", help="MCP commands")
-    
+
     # MCP list command
     mcp_list_parser = mcp_subparsers.add_parser("list", help="List MCP servers")
-    
+
     # MCP enable command
     mcp_enable_parser = mcp_subparsers.add_parser("enable", help="Enable an MCP server")
     mcp_enable_parser.add_argument("server_id", help="MCP server ID to enable")
-    
-    # MCP disable command  
-    mcp_disable_parser = mcp_subparsers.add_parser("disable", help="Disable an MCP server")
+
+    # MCP disable command
+    mcp_disable_parser = mcp_subparsers.add_parser(
+        "disable", help="Disable an MCP server"
+    )
     mcp_disable_parser.add_argument("server_id", help="MCP server ID to disable")
-    
+
     # Setup command (for manual token setup)
-    setup_parser = subparsers.add_parser("setup", help="Setup CLI Pilot configuration manually")
+    setup_parser = subparsers.add_parser(
+        "setup", help="Setup CLI Pilot configuration manually"
+    )
     setup_parser.add_argument("--token", help="GitHub Copilot token")
-    
+
     args = parser.parse_args()
-    
+
     if not args.command:
         parser.print_help()
         return 1
-    
+
     try:
         clipilot = CLIPilot(
-            workspace=args.workspace,
-            verbose=args.verbose,
-            config_path=args.config
+            workspace=args.workspace, verbose=args.verbose, config_path=args.config
         )
-        
+
         if args.command == "auth":
             if not args.auth_command:
                 auth_parser.print_help()
                 return 1
-            
+
             if args.auth_command == "login":
-                return clipilot.handle_auth_login(client_id=getattr(args, 'client_id', None))
+                return clipilot.handle_auth_login(
+                    client_id=getattr(args, "client_id", None)
+                )
             elif args.auth_command == "status":
                 return clipilot.handle_auth_status()
             elif args.auth_command == "logout":
                 return clipilot.handle_auth_logout()
-        
+
         elif args.command == "chat":
             return clipilot.handle_chat(
                 message=args.message,
                 files=args.file or [],
                 include_context=args.context,
                 agent=args.agent,
-                model=args.model
+                model=args.model,
             )
         elif args.command == "interactive":
             return clipilot.start_interactive(agent=args.agent, model=args.model)
@@ -153,7 +185,7 @@ Examples:
             if not args.mcp_command:
                 mcp_parser.print_help()
                 return 1
-            
+
             if args.mcp_command == "list":
                 return clipilot.list_mcp_servers()
             elif args.mcp_command == "enable":
@@ -165,13 +197,14 @@ Examples:
         else:
             parser.print_help()
             return 1
-            
+
     except KeyboardInterrupt:
         print("\nOperation cancelled by user.")
         return 130
     except Exception as e:
         if args.verbose:
             import traceback
+
             traceback.print_exc()
         else:
             print(f"Error: {e}")

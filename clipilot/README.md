@@ -53,7 +53,7 @@ Choose from 7 different AI models, each with unique capabilities:
 python main.py chat "hello" --model gpt-4.1-2025-04-14
 python main.py chat "hello" --model gpt-4o-mini
 
-# Claude Models  
+# Claude Models
 python main.py chat "hello" --model claude-3.5-sonnet
 python main.py chat "hello" --model claude-3.7-sonnet
 
@@ -77,7 +77,7 @@ python main.py chat "read config.py and summarize it" --agent agent
 python main.py chat "list all Python files in src directory" --agent agent
 ```
 
-### 🔍 **Brave Search MCP Server**  
+### 🔍 **Brave Search MCP Server**
 Web search capabilities for research and documentation.
 ```bash
 # Enable/disable search capabilities
@@ -101,7 +101,7 @@ python main.py mcp list
 # Enable a specific server
 python main.py mcp enable filesystem
 
-# Disable a specific server  
+# Disable a specific server
 python main.py mcp disable brave-search
 ```
 
@@ -223,7 +223,7 @@ python main.py interactive --agent workspace --model claude-3.5-sonnet
 python main.py list-models                    # List all available models
 python main.py set-model claude-3.5-sonnet   # Set default model
 
-# Agent management  
+# Agent management
 python main.py list-agents                    # List all agents
 python main.py set-agent terminal             # Set default agent
 
@@ -237,7 +237,7 @@ python main.py mcp disable brave-search      # Disable web search
 ```bash
 # Multi-agent workflow
 python main.py chat "pwd" --agent terminal
-python main.py chat "analyze current project" --agent workspace  
+python main.py chat "analyze current project" --agent workspace
 python main.py chat "read main.py" --agent agent
 
 # Model comparison
@@ -286,7 +286,7 @@ CLI Pilot stores configuration in `~/.clipilot/config.json`. You can customize:
 ### 🔐 **Authentication Commands**
 ```bash
 python main.py auth login              # GitHub OAuth authentication
-python main.py auth status             # Check authentication status  
+python main.py auth status             # Check authentication status
 python main.py auth logout             # Remove stored credentials
 python main.py setup --token <token>   # Manual token setup
 ```
@@ -321,7 +321,7 @@ python main.py list-models             # List all available models
 python main.py set-model <model-id>    # Set default model
 
 # Agent management
-python main.py list-agents             # List all available agents  
+python main.py list-agents             # List all available agents
 python main.py set-agent <agent-id>    # Set default agent
 
 # MCP server management
@@ -344,7 +344,7 @@ When in interactive mode (`python main.py interactive`), you can use these speci
 ### 📋 **Navigation Commands**
 ```bash
 /help                    # Show available commands and usage tips
-/context                 # Display current workspace context information  
+/context                 # Display current workspace context information
 /files                   # List relevant files in the workspace
 /history                 # Show recent chat history
 /clear                   # Clear the current chat history
@@ -380,7 +380,7 @@ CLI Pilot stores configuration in `~/.clipilot/config.json`:
   },
   "chat": {
     "default_agent": "workspace",
-    "default_model": "claude-3.5-sonnet", 
+    "default_model": "claude-3.5-sonnet",
     "max_context_size": 8192,
     "temperature": 0.1
   },
@@ -439,7 +439,7 @@ CLI Pilot stores configuration in `~/.clipilot/config.json`:
       "supports_vision": true
     },
     "claude-3.5-sonnet": {
-      "name": "Claude 3.5 Sonnet", 
+      "name": "Claude 3.5 Sonnet",
       "max_tokens": 8192,
       "supports_tools": true,
       "supports_vision": true
@@ -473,7 +473,7 @@ python main.py --config ./project-config.json chat "analyze project"
 python main.py --workspace /path/to/project chat "help with project" --context
 
 # Pipeline usage with different models
-python main.py chat "analyze code" --model claude-3.5-sonnet | 
+python main.py chat "analyze code" --model claude-3.5-sonnet |
 python main.py chat "create tests based on this analysis" --model gpt-4.1-2025-04-14
 
 # Batch processing with agent mode
@@ -580,7 +580,7 @@ python main.py chat "teach me GraphQL with practical examples" --model o1
 # Language migration
 python main.py chat "convert this JavaScript to Python" --file script.js --agent workspace
 
-# Framework migration  
+# Framework migration
 python main.py chat "migrate from Flask to FastAPI" --context --agent workspace --model claude-3.5-sonnet
 
 # Code modernization
@@ -645,7 +645,7 @@ python main.py chat "VS Code settings for Python" --agent vscode
 CLI Pilot provides a comprehensive AI-powered development environment with:
 
 - **🤖 4 Specialized Agents** for different development contexts
-- **🧠 7 AI Models** with unique capabilities and strengths  
+- **🧠 7 AI Models** with unique capabilities and strengths
 - **🔧 3 MCP Servers** for real tool integration and file operations
 - **💬 Interactive & Single-Shot** modes for flexible workflows
 - **⚙️ Dynamic Configuration** for personalized development experience
@@ -670,8 +670,8 @@ python main.py chat "Hello, help me get started with my project!" --agent worksp
    ```bash
    # ❌ Vague
    python main.py chat "help with code"
-   
-   # ✅ Specific  
+
+   # ✅ Specific
    python main.py chat "refactor this function to use async/await" --file api_client.py
    ```
 
@@ -679,7 +679,7 @@ python main.py chat "Hello, help me get started with my project!" --agent worksp
    ```bash
    # Single file context
    python main.py chat "explain this algorithm" --file sorting.py
-   
+
    # Full workspace context
    python main.py chat "suggest project improvements" --context
    ```
@@ -688,10 +688,10 @@ python main.py chat "Hello, help me get started with my project!" --agent worksp
    ```bash
    # Code analysis → Workspace Agent
    python main.py chat "review code quality" --agent workspace
-   
+
    # Command help → Terminal Agent
    python main.py chat "git rebase commands" --agent terminal
-   
+
    # File operations → Agent Mode
    python main.py chat "read all config files" --agent agent
    ```
@@ -700,10 +700,10 @@ python main.py chat "Hello, help me get started with my project!" --agent worksp
    ```bash
    # Complex reasoning → O1
    python main.py chat "design system architecture" --model o1
-   
+
    # Code analysis → Claude
    python main.py chat "review this code" --model claude-3.5-sonnet
-   
+
    # Quick help → GPT-4o Mini
    python main.py chat "syntax help" --model gpt-4o-mini
    ```
@@ -720,7 +720,7 @@ python main.py chat "Hello, help me get started with my project!" --agent worksp
 # Step 1: Analyze overall structure
 python main.py chat "analyze project structure" --agent workspace --context
 
-# Step 2: Review specific files  
+# Step 2: Review specific files
 python main.py chat "review this module" --file src/main.py --agent workspace
 
 # Step 3: Check for issues
@@ -926,6 +926,6 @@ python main.py --verbose interactive
 # Check all system information
 python main.py --verbose auth status
 python main.py --verbose list-models
-python main.py --verbose list-agents  
+python main.py --verbose list-agents
 python main.py --verbose mcp list
 ```
